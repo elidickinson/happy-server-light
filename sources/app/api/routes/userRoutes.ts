@@ -79,11 +79,19 @@ export async function userRoutes(app: Fastify) {
             where: {
                 username: {
                     startsWith: query,
-                    mode: 'insensitive'
                 }
             },
-            include: {
-                githubUser: true
+            select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                username: true,
+                avatar: true,
+                githubUser: {
+                    select: {
+                        profile: true
+                    }
+                }
             },
             take: 10,
             orderBy: {

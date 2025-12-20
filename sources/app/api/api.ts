@@ -21,6 +21,9 @@ import { enableAuthentication } from "./utils/enableAuthentication";
 import { userRoutes } from "./routes/userRoutes";
 import { feedRoutes } from "./routes/feedRoutes";
 import { kvRoutes } from "./routes/kvRoutes";
+import { normalizePublicPath, readPublicFile } from "@/storage/files";
+import { extname, resolve, sep } from "node:path";
+import { readFile, stat } from "node:fs/promises";
 
 export async function startApi() {
 
@@ -39,6 +42,129 @@ export async function startApi() {
     });
     app.get('/', function (request, reply) {
         reply.send('Welcome to Happy Server!');
+    });
+
+    // Optional: serve a prebuilt web UI bundle (happy-local build) under /ui by default.
+    const uiDir = process.env.HAPPY_SERVER_LIGHT_UI_DIR?.trim();
+    const uiPrefix = process.env.HAPPY_SERVER_LIGHT_UI_PREFIX?.trim()
+        ? process.env.HAPPY_SERVER_LIGHT_UI_PREFIX.trim()
+        : '/ui';
+
+    if (uiDir) {
+        const prefix = uiPrefix.endsWith('/') ? uiPrefix.slice(0, -1) : uiPrefix;
+
+        app.get(prefix, async (_request, reply) => {
+            return reply.redirect(302, `${prefix}/`);
+        });
+
+        app.get(`${prefix}/*`, async (request, reply) => {
+            try {
+                const raw = (request.params as { '*': string | undefined })['*'] || '';
+                const decoded = decodeURIComponent(raw);
+                const rel = decoded.replace(/^\/+/, '');
+
+                const root = resolve(uiDir);
+                const candidate = resolve(root, rel || 'index.html');
+                if (!(candidate === root || candidate.startsWith(root + sep))) {
+                    return reply.code(404).send({ error: 'Not found' });
+                }
+
+                let filePath = candidate;
+                try {
+                    const st = await stat(filePath);
+                    if (st.isDirectory()) {
+                        filePath = resolve(root, 'index.html');
+                    }
+                } catch {
+                    // SPA fallback
+                    filePath = resolve(root, 'index.html');
+                }
+
+                const bytes = await readFile(filePath);
+                const ext = extname(filePath).toLowerCase();
+
+                if (ext === '.html') {
+                    reply.header('content-type', 'text/html; charset=utf-8');
+                    reply.header('cache-control', 'no-cache');
+                } else if (ext === '.js') {
+                    reply.header('content-type', 'text/javascript; charset=utf-8');
+                    reply.header('cache-control', 'public, max-age=31536000, immutable');
+                } else if (ext === '.css') {
+                    reply.header('content-type', 'text/css; charset=utf-8');
+                    reply.header('cache-control', 'public, max-age=31536000, immutable');
+                } else if (ext === '.json') {
+                    reply.header('content-type', 'application/json; charset=utf-8');
+                    reply.header('cache-control', 'public, max-age=31536000, immutable');
+                } else if (ext === '.svg') {
+                    reply.header('content-type', 'image/svg+xml');
+                    reply.header('cache-control', 'public, max-age=31536000, immutable');
+                } else if (ext === '.ico') {
+                    reply.header('content-type', 'image/x-icon');
+                    reply.header('cache-control', 'public, max-age=31536000, immutable');
+                } else if (ext === '.wasm') {
+                    reply.header('content-type', 'application/wasm');
+                    reply.header('cache-control', 'public, max-age=31536000, immutable');
+                } else if (ext === '.ttf') {
+                    reply.header('content-type', 'font/ttf');
+                    reply.header('cache-control', 'public, max-age=31536000, immutable');
+                } else if (ext === '.woff') {
+                    reply.header('content-type', 'font/woff');
+                    reply.header('cache-control', 'public, max-age=31536000, immutable');
+                } else if (ext === '.woff2') {
+                    reply.header('content-type', 'font/woff2');
+                    reply.header('cache-control', 'public, max-age=31536000, immutable');
+                } else if (ext === '.png') {
+                    reply.header('content-type', 'image/png');
+                    reply.header('cache-control', 'public, max-age=31536000, immutable');
+                } else if (ext === '.jpg' || ext === '.jpeg') {
+                    reply.header('content-type', 'image/jpeg');
+                    reply.header('cache-control', 'public, max-age=31536000, immutable');
+                } else if (ext === '.webp') {
+                    reply.header('content-type', 'image/webp');
+                    reply.header('cache-control', 'public, max-age=31536000, immutable');
+                } else if (ext === '.gif') {
+                    reply.header('content-type', 'image/gif');
+                    reply.header('cache-control', 'public, max-age=31536000, immutable');
+                } else {
+                    reply.header('content-type', 'application/octet-stream');
+                    reply.header('cache-control', 'public, max-age=31536000, immutable');
+                }
+
+                return reply.send(Buffer.from(bytes));
+            } catch {
+                return reply.code(404).send({ error: 'Not found' });
+            }
+        });
+    }
+
+    // Local file serving for happy-server-light (avatars/images/etc)
+    app.get('/files/*', async (request, reply) => {
+        try {
+            const raw = (request.params as { '*': string | undefined })['*'] || '';
+            const decoded = decodeURIComponent(raw);
+            const path = normalizePublicPath(decoded);
+
+            const bytes = await readPublicFile(path);
+
+            // Small content-type helper for common image formats
+            const ext = extname(path).toLowerCase();
+            if (ext === '.png') {
+                reply.header('content-type', 'image/png');
+            } else if (ext === '.jpg' || ext === '.jpeg') {
+                reply.header('content-type', 'image/jpeg');
+            } else if (ext === '.webp') {
+                reply.header('content-type', 'image/webp');
+            } else if (ext === '.gif') {
+                reply.header('content-type', 'image/gif');
+            } else {
+                reply.header('content-type', 'application/octet-stream');
+            }
+
+            reply.header('cache-control', 'public, max-age=31536000, immutable');
+            return reply.send(Buffer.from(bytes));
+        } catch {
+            return reply.code(404).send({ error: 'Not found' });
+        }
     });
 
     // Create typed provider

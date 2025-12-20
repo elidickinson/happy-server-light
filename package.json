@@ -1,7 +1,7 @@
 {
-  "name": "happy-server",
+  "name": "happy-server-light",
   "version": "0.0.0",
-  "repository": "https://github.com/slopus/happy-server.git",
+  "repository": "https://github.com/leeroybrun/happy-server-light.git",
   "author": "Steve Korshakov <steve@korshakov.com>",
   "license": "MIT",
   "private": true,
@@ -9,17 +9,11 @@
   "scripts": {
     "build": "tsc --noEmit",
     "start": "tsx ./sources/main.ts",
-    "dev": "lsof -ti tcp:3005 | xargs kill -9 && tsx --env-file=.env --env-file=.env.dev ./sources/main.ts",
+    "dev": "node ./scripts/dev.mjs",
     "test": "vitest run",
-    "migrate": "dotenv -e .env.dev -- prisma migrate dev",
-    "migrate:reset": "dotenv -e .env.dev -- prisma migrate reset",
+    "db:push": "prisma db push",
     "generate": "prisma generate",
-    "postinstall": "prisma generate",
-    "db": "docker run -d -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=handy -v $(pwd)/.pgdata:/var/lib/postgresql/data -p 5432:5432 postgres",
-    "redis": "docker run -d -p 6379:6379 redis",
-    "s3": "docker run -d --name minio -p 9000:9000 -p 9001:9001 -e MINIO_ROOT_USER=minioadmin -e MINIO_ROOT_PASSWORD=minioadmin -v $(pwd)/.minio/data:/data minio/minio server /data --console-address :9001",
-    "s3:down": "docker rm -f minio || true",
-    "s3:init": "dotenv -e .env.dev -- docker run --rm --network container:minio --entrypoint /bin/sh minio/mc -c \"mc alias set local http://localhost:9000 $S3_ACCESS_KEY $S3_SECRET_KEY && mc mb -p local/$S3_BUCKET || true && mc anonymous set download local/$S3_BUCKET\""
+    "postinstall": "prisma generate"
   },
   "devDependencies": {
     "@types/chalk": "^2.2.0",
@@ -37,7 +31,6 @@
     "@fastify/bearer-auth": "^10.1.1",
     "@fastify/cors": "^10.0.1",
     "@prisma/client": "^6.11.1",
-    "@socket.io/redis-streams-adapter": "^0.2.2",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/semver": "^7.7.0",
     "axios": "^1.6.8",
@@ -47,9 +40,7 @@
     "elevenlabs": "^1.54.0",
     "fastify": "^5.2.0",
     "fastify-type-provider-zod": "^4.0.2",
-    "ioredis": "^5.6.1",
     "jsonwebtoken": "^9.0.2",
-    "minio": "^8.0.5",
     "octokit": "^5.0.3",
     "pino-pretty": "^13.0.0",
     "prisma": "^6.11.1",

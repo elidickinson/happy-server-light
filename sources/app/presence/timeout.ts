@@ -7,6 +7,9 @@ import { buildMachineActivityEphemeral, buildSessionActivityEphemeral, eventRout
 export function startTimeout() {
     forever('session-timeout', async () => {
         while (true) {
+            if (shutdownSignal.aborted) {
+                return;
+            }
             // Find timed out sessions
             const sessions = await db.session.findMany({
                 where: {
@@ -17,16 +20,23 @@ export function startTimeout() {
                 }
             });
             for (const session of sessions) {
-                const updated = await db.session.updateManyAndReturn({
+                if (shutdownSignal.aborted) {
+                    return;
+                }
+                const { count } = await db.session.updateMany({
                     where: { id: session.id, active: true },
                     data: { active: false }
                 });
-                if (updated.length === 0) {
+                if (count === 0) {
+                    continue;
+                }
+                const updated = await db.session.findUnique({ where: { id: session.id } });
+                if (!updated) {
                     continue;
                 }
                 eventRouter.emitEphemeral({
                     userId: session.accountId,
-                    payload: buildSessionActivityEphemeral(session.id, false, updated[0].lastActiveAt.getTime(), false),
+                    payload: buildSessionActivityEphemeral(session.id, false, updated.lastActiveAt.getTime(), false),
                     recipientFilter: { type: 'user-scoped-only' }
                 });
             }
@@ -41,16 +51,23 @@ export function startTimeout() {
                 }
             });
             for (const machine of machines) {
-                const updated = await db.machine.updateManyAndReturn({
+                if (shutdownSignal.aborted) {
+                    return;
+                }
+                const { count } = await db.machine.updateMany({
                     where: { id: machine.id, active: true },
                     data: { active: false }
                 });
-                if (updated.length === 0) {
+                if (count === 0) {
+                    continue;
+                }
+                const updated = await db.machine.findUnique({ where: { id: machine.id } });
+                if (!updated) {
                     continue;
                 }
                 eventRouter.emitEphemeral({
                     userId: machine.accountId,
-                    payload: buildMachineActivityEphemeral(machine.id, false, updated[0].lastActiveAt.getTime()),
+                    payload: buildMachineActivityEphemeral(machine.id, false, updated.lastActiveAt.getTime()),
                     recipientFilter: { type: 'user-scoped-only' }
                 });
             }

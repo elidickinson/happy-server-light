@@ -1,32 +1,42 @@
-# Happy Server
+# Happy Server Light
 
-Minimal backend for open-source end-to-end encrypted Claude Code clients.
+Lightweight self-hosted backend for Happy, designed for personal use (e.g. over Tailscale).
 
-## What is Happy?
+## What this is
 
-Happy Server is the synchronization backbone for secure Claude Code clients. It enables multiple devices to share encrypted conversations while maintaining complete privacy - the server never sees your messages, only encrypted blobs it cannot read.
+`happy-server-light` is a fork of `slopus/happy-server` with a much smaller deployment footprint:
 
-## Features
+- **SQLite** instead of Postgres (single local file)
+- **No Redis**
+- **Local file storage** served from the same process under `GET /files/*` (no S3/Minio)
 
-- 🔐 **Zero Knowledge** - The server stores encrypted data but has no ability to decrypt it
-- 🎯 **Minimal Surface** - Only essential features for secure sync, nothing more  
-- 🕵️ **Privacy First** - No analytics, no tracking, no data mining
-- 📖 **Open Source** - Transparent implementation you can audit and self-host
-- 🔑 **Cryptographic Auth** - No passwords stored, only public key signatures
-- ⚡ **Real-time Sync** - WebSocket-based synchronization across all your devices
-- 📱 **Multi-device** - Seamless session management across phones, tablets, and computers
-- 🔔 **Push Notifications** - Notify when Claude Code finishes tasks or needs permissions (encrypted, we can't see the content)
-- 🌐 **Distributed Ready** - Built to scale horizontally when needed
+The API surface stays compatible with the Happy mobile app + `happy-cli` (HTTP + Socket.IO at `/v1/updates`).
 
-## How It Works
+## What you “lose” vs full happy-server
 
-Your Claude Code clients generate encryption keys locally and use Happy Server as a secure relay. Messages are end-to-end encrypted before leaving your device. The server's job is simple: store encrypted blobs and sync them between your devices in real-time.
+- **Horizontal scaling** (it’s intended to run as a single instance for one person/small group)
+- Operational features that assume managed infrastructure (Redis/S3)
 
-## Hosting
+## Quick start
 
-**You don't need to self-host!** Our free cloud Happy Server at `happy-api.slopus.com` is just as secure as running your own. Since all data is end-to-end encrypted before it reaches our servers, we literally cannot read your messages even if we wanted to. The encryption happens on your device, and only you have the keys.
+```bash
+yarn install
+yarn dev
+```
 
-That said, Happy Server is open source and self-hostable if you prefer running your own infrastructure. The security model is identical whether you use our servers or your own.
+The first run will:
+- create/update the SQLite schema (`prisma db push`)
+- generate `HANDY_MASTER_SECRET` if missing
+
+By default, data is stored under:
+- `~/.happy/server-light/happy-server-light.sqlite`
+- `~/.happy/server-light/files/*`
+- `~/.happy/server-light/handy-master-secret.txt`
+
+## Connecting clients
+
+- **Mobile app**: Settings → Server Configuration → set your server URL (e.g. `http://<tailscale-ip>:3005`)
+- **happy-cli**: set `HAPPY_SERVER_URL` to your local server URL
 
 ## License
 
