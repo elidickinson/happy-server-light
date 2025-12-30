@@ -2,6 +2,8 @@
 
 Lightweight self-hosted backend for Happy, designed for personal use (e.g. over Tailscale).
 
+Use with [Happy Local](https://github.com/leeroybrun/happy-local) to easily setup and run the whole Happy stack locally on your computer and connect to it from anywhere (including mobile) using Tailscale.
+
 ## What this is
 
 `happy-server-light` is a fork of `slopus/happy-server` with a much smaller deployment footprint:
