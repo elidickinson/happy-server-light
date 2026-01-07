@@ -1,21 +1,16 @@
-version: '3.8'
-
 services:
   app:
-    image: ${DOCKER_IMAGE:-elidickinson/happy-server-light:latest}
-    container_name: happy-server-light
-    restart: unless-stopped
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000"
     environment:
       - NODE_ENV=production
       - PORT=3000
       - PUBLIC_URL=${PUBLIC_URL:-https://your-domain.com}
     volumes:
-      - ../files/data:/app/.happy
-    expose:
-      - "3000"
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
+      - happy-data:/app/.happy
+
+volumes:
+  happy-data:

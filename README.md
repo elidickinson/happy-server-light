@@ -48,7 +48,7 @@ By default, data is stored under:
 4. Domains tab: add domain, set port `3000`
 5. Deploy
 
-The `../files/data` volume persists database and files automatically.
+Dokploy will build the image from your Dockerfile automatically. The `happy-data` volume persists database and files.
 
 ## License
 
