@@ -40,6 +40,16 @@ By default, data is stored under:
 - **Mobile app**: Settings → Server Configuration → set your server URL (e.g. `http://<tailscale-ip>:3005`)
 - **happy-cli**: set `HAPPY_SERVER_URL` to your local server URL
 
+## Dokploy Deployment
+
+1. In Dokploy: **Create Service → Compose**
+2. Paste `docker-compose.yml` content
+3. Environment tab: set `PUBLIC_URL=https://your-domain.com`
+4. Domains tab: add domain, set port `3000`
+5. Deploy
+
+The `../files/data` volume persists database and files automatically.
+
 ## License
 
 MIT - Use it, modify it, deploy it anywhere.
